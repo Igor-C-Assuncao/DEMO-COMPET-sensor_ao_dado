@@ -1,0 +1,1374 @@
+{
+ "uid": "fab-anom",
+ "title": "3 · Anomalias",
+ "description": "Anomalias de dado e de máquina",
+ "tags": [
+  "demo",
+  "aula15"
+ ],
+ "timezone": "browser",
+ "schemaVersion": 39,
+ "version": 1,
+ "editable": true,
+ "graphTooltip": 1,
+ "refresh": "5s",
+ "time": {
+  "from": "now-30m",
+  "to": "now"
+ },
+ "timepicker": {
+  "refresh_intervals": [
+   "1s",
+   "5s",
+   "10s",
+   "30s",
+   "1m"
+  ]
+ },
+ "annotations": {
+  "list": [
+   {
+    "builtIn": 1,
+    "datasource": {
+     "type": "grafana",
+     "uid": "-- Grafana --"
+    },
+    "enable": false,
+    "hide": true,
+    "iconColor": "rgba(0, 211, 255, 1)",
+    "name": "Annotations & Alerts",
+    "type": "dashboard"
+   },
+   {
+    "datasource": {
+     "type": "influxdb",
+     "uid": "influx-fabrica"
+    },
+    "enable": true,
+    "iconColor": "#F4AB1C",
+    "name": "Cenários injetados",
+    "target": {
+     "refId": "Anno",
+     "query": "from(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"cenario\" and r._field == \"ativo\" or r._field == \"rotulo\" or r._field == \"texto\")\n  |> pivot(rowKey: [\"_time\", \"nome\", \"maquina\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> filter(fn: (r) => r.ativo == 1.0)\n  |> keep(columns: [\"_time\", \"rotulo\", \"texto\", \"nome\"])"
+    },
+    "mappings": {
+     "title": {
+      "source": "field",
+      "value": "rotulo"
+     },
+     "text": {
+      "source": "field",
+      "value": "texto"
+     },
+     "tags": {
+      "source": "field",
+      "value": "nome"
+     }
+    }
+   }
+  ]
+ },
+ "templating": {
+  "list": []
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "timeseries",
+   "title": "Anomalias detectadas pelo gateway, por tipo",
+   "description": "Cada barra conta as leituras que o gateway marcou como não confiáveis, por tipo de problema, a cada 30 s.",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 30000000000 then duration(v: passo) else duration(v: 30000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"leitura\" and r._field == \"qualidade\" and r._value != \"boa\")\n  |> map(fn: (r) => ({r with qual: r._value, _value: 1.0}))\n  |> group(columns: [\"qual\"])\n  |> aggregateWindow(every: janela, fn: sum, createEmpty: false)\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"qual\"], valueColumn: \"_value\")\n  |> group()\n  |> drop(columns: [\"_start\", \"_stop\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "",
+     "custom": {
+      "drawStyle": "bars",
+      "fillOpacity": 85,
+      "lineWidth": 1,
+      "stacking": {
+       "mode": "normal",
+       "group": "A"
+      },
+      "spanNulls": false,
+      "showPoints": "never",
+      "barAlignment": 0
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "fio_rompido"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "red"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "congelado"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "blue"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "pico"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "yellow"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "relogio_fora"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "purple"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "unidade_convertida"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "orange"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "fora_da_faixa"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "dark-red"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "desc"
+    }
+   }
+  },
+  {
+   "id": 2,
+   "type": "timeseries",
+   "title": "Rolamento desgastando: vibração e temperatura da bomba",
+   "description": "A vibração (eixo esquerdo) sobe aos poucos e a temperatura (eixo direito) vai junto. Os limiares (4,5 e 7 mm/s) são só de exemplo, para o painel.",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 8,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 5000000000 then duration(v: passo) else duration(v: 5000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"leitura\" and r._field == \"valor\" and ((r.maquina == \"bomba03\" and r.variavel == \"vibracao_mm_s\") or (r.maquina == \"bomba03\" and r.variavel == \"temp_carcaca_c\")))\n  |> aggregateWindow(every: janela, fn: mean, createEmpty: true)\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"variavel\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"vibracao_mm_s\", \"temp_carcaca_c\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "",
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 8,
+      "showPoints": "never",
+      "pointSize": 5,
+      "spanNulls": 25000,
+      "lineInterpolation": "linear",
+      "axisPlacement": "auto",
+      "gradientMode": "none",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      },
+      "thresholdsStyle": {
+       "mode": "line+area"
+      }
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       },
+       {
+        "color": "orange",
+        "value": 4.5
+       },
+       {
+        "color": "red",
+        "value": 7
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "vibracao_mm_s"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "yellow"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "temp_carcaca_c"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "orange"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "temp_carcaca_c"
+      },
+      "properties": [
+       {
+        "id": "custom.axisPlacement",
+        "value": "right"
+       },
+       {
+        "id": "custom.thresholdsStyle",
+        "value": {
+         "mode": "off"
+        }
+       },
+       {
+        "id": "unit",
+        "value": "celsius"
+       },
+       {
+        "id": "min",
+        "value": 30
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "vibracao_mm_s"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "suffix:mm/s"
+       },
+       {
+        "id": "min",
+        "value": 0
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 3,
+   "type": "timeseries",
+   "title": "Superaquecimento: zonas do forno",
+   "description": "Se só uma zona sobe, o problema é local (zona 2). Se as três sobem, é geral.",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 8,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 5000000000 then duration(v: passo) else duration(v: 5000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"leitura\" and r._field == \"valor\" and ((r.maquina == \"forno02\" and r.variavel == \"temp_zona1_c\") or (r.maquina == \"forno02\" and r.variavel == \"temp_zona2_c\") or (r.maquina == \"forno02\" and r.variavel == \"temp_zona3_c\")))\n  |> aggregateWindow(every: janela, fn: mean, createEmpty: true)\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"variavel\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"temp_zona1_c\", \"temp_zona2_c\", \"temp_zona3_c\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "celsius",
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 8,
+      "showPoints": "never",
+      "pointSize": 5,
+      "spanNulls": 25000,
+      "lineInterpolation": "linear",
+      "axisPlacement": "auto",
+      "gradientMode": "none",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      },
+      "thresholdsStyle": {
+       "mode": "line+area"
+      }
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "transparent",
+        "value": null
+       },
+       {
+        "color": "red",
+        "value": 225
+       }
+      ]
+     },
+     "min": 195
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 4,
+   "type": "timeseries",
+   "title": "Deriva do termopar: termopar x Pt100 de referência",
+   "description": "Dois sensores medem a mesma zona. Quando a diferença (eixo à direita) cresce, o termopar saiu da calibração, e não o forno.",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 5000000000 then duration(v: passo) else duration(v: 5000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"leitura\" and r._field == \"valor\" and r.maquina == \"forno02\" and (r.variavel == \"temp_zona1_c\" or r.variavel == \"temp_zona1_ref_c\"))\n  |> aggregateWindow(every: janela, fn: mean, createEmpty: false)\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"variavel\"], valueColumn: \"_value\")\n  |> map(fn: (r) => ({_time: r._time, termopar: r.temp_zona1_c, pt100_referencia: r.temp_zona1_ref_c, diferenca: r.temp_zona1_c - r.temp_zona1_ref_c}))"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "celsius",
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 8,
+      "showPoints": "never",
+      "pointSize": 5,
+      "spanNulls": 25000,
+      "lineInterpolation": "linear",
+      "axisPlacement": "auto",
+      "gradientMode": "none",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "termopar"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "orange"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "pt100_referencia"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "green"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "diferenca"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "red"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "diferenca"
+      },
+      "properties": [
+       {
+        "id": "custom.axisPlacement",
+        "value": "right"
+       },
+       {
+        "id": "min",
+        "value": -2
+       },
+       {
+        "id": "max",
+        "value": 16
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 5,
+   "type": "timeseries",
+   "title": "Fio rompido: temperatura do rolo e sinal bruto",
+   "description": "A temperatura (°C) desaparece e o sinal bruto vai a 0 mA: é fio rompido. 0 mA nunca é 0 °C.",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 16,
+    "w": 12,
+    "h": 8
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 2000000000 then duration(v: passo) else duration(v: 2000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"leitura\" and r.maquina == \"laminadora01\" and r.variavel == \"temperatura_c\" and (r._field == \"valor\" or r._field == \"bruto\"))\n  |> aggregateWindow(every: janela, fn: mean, createEmpty: true)\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"valor\", \"bruto\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "",
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 8,
+      "showPoints": "never",
+      "pointSize": 5,
+      "spanNulls": 5000,
+      "lineInterpolation": "linear",
+      "axisPlacement": "auto",
+      "gradientMode": "none",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "valor"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "blue"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "bruto"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "orange"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "bruto"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "mamp"
+       },
+       {
+        "id": "custom.axisPlacement",
+        "value": "right"
+       },
+       {
+        "id": "min",
+        "value": 0
+       },
+       {
+        "id": "max",
+        "value": 20
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "valor"
+      },
+      "properties": [
+       {
+        "id": "unit",
+        "value": "celsius"
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 6,
+   "type": "timeseries",
+   "title": "Valor congelado: pressão da prensa",
+   "description": "A pressão deveria oscilar a cada ciclo. Uma linha reta, sem ruído, é sensor travado (o gateway marca 'congelado' após 8 leituras iguais).",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 24,
+    "w": 12,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 2000000000 then duration(v: passo) else duration(v: 2000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"leitura\" and r._field == \"valor\" and ((r.maquina == \"prensa01\" and r.variavel == \"pressao_bar\")))\n  |> aggregateWindow(every: janela, fn: max, createEmpty: true)\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"variavel\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"pressao_bar\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "pressurebar",
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 8,
+      "showPoints": "never",
+      "pointSize": 5,
+      "spanNulls": 5000,
+      "lineInterpolation": "linear",
+      "axisPlacement": "auto",
+      "gradientMode": "none",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "pressao_bar"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "blue"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 7,
+   "type": "timeseries",
+   "title": "Picos por interferência: corrente da prensa",
+   "description": "Picos isolados muito acima do normal, que desaparecem na leitura seguinte: ruído elétrico, e não a máquina.",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 24,
+    "w": 12,
+    "h": 7
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 2000000000 then duration(v: passo) else duration(v: 2000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"leitura\" and r._field == \"valor\" and ((r.maquina == \"prensa01\" and r.variavel == \"corrente_a\")))\n  |> aggregateWindow(every: janela, fn: max, createEmpty: true)\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"variavel\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"corrente_a\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "amp",
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 1,
+      "fillOpacity": 8,
+      "showPoints": "always",
+      "pointSize": 5,
+      "spanNulls": 25000,
+      "lineInterpolation": "linear",
+      "axisPlacement": "auto",
+      "gradientMode": "none",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "corrente_a"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "yellow"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 8,
+   "type": "state-timeline",
+   "title": "Perda de link sem fio: misturador M-02",
+   "description": "O vigia do gateway avisa 'sem dados' quando o canal fica calado por mais de 4 períodos (mínimo 15 s).",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 31,
+    "w": 12,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 10000000000 then duration(v: passo) else duration(v: 10000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"link\" and r.maquina == \"misturador02\" and r._field == \"ok\")\n  |> aggregateWindow(every: janela, fn: min, createEmpty: false)\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"variavel\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"corrente_a\", \"vibracao_mm_s\", \"ligada\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "mappings": [
+      {
+       "type": "value",
+       "options": {
+        "1": {
+         "text": "ok",
+         "color": "green",
+         "index": 0
+        },
+        "0": {
+         "text": "sem dados",
+         "color": "red",
+         "index": 1
+        }
+       }
+      }
+     ],
+     "custom": {
+      "fillOpacity": 80,
+      "lineWidth": 0,
+      "spanNulls": false
+     },
+     "color": {
+      "mode": "fixed",
+      "fixedColor": "green"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "mergeValues": true,
+    "showValue": "auto",
+    "alignValue": "left",
+    "rowHeight": 0.8,
+    "legend": {
+     "showLegend": true,
+     "displayMode": "list",
+     "placement": "bottom"
+    },
+    "tooltip": {
+     "mode": "single"
+    }
+   }
+  },
+  {
+   "id": 9,
+   "type": "timeseries",
+   "title": "Relógio atrasado: quanto a prensa está atrás",
+   "description": "Diferença entre a hora que a máquina carimbou e a hora em que o dado chegou. Com 10 minutos, o cruzamento com outras fontes erra.",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 12,
+    "y": 31,
+    "w": 12,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 5000000000 then duration(v: passo) else duration(v: 5000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"leitura\" and r._field == \"atraso_ms\" and r.maquina == \"prensa01\" and r.variavel == \"corrente_a\")\n  |> aggregateWindow(every: janela, fn: max, createEmpty: true)\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0}))\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"variavel\"], valueColumn: \"_value\")\n  |> rename(columns: {corrente_a: \"atraso_s\"})\n  |> keep(columns: [\"_time\", \"atraso_s\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "s",
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 8,
+      "showPoints": "never",
+      "pointSize": 5,
+      "spanNulls": 5000,
+      "lineInterpolation": "linear",
+      "axisPlacement": "auto",
+      "gradientMode": "none",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "atraso_s"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "purple"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 10,
+   "type": "timeseries",
+   "title": "Mensagens duplicadas descartadas",
+   "description": "A rede entregou duas vezes a mesma mensagem. Sem tratar, contagens e médias ficam erradas.",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 0,
+    "y": 37,
+    "w": 8,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 10000000000 then duration(v: passo) else duration(v: 10000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"gateway\" and r._field == \"duplicatas\")\n  |> aggregateWindow(every: janela, fn: last, createEmpty: false)\n  |> derivative(unit: 1m, nonNegative: true)\n  |> keep(columns: [\"_time\", \"_value\"])\n  |> rename(columns: {_value: \"duplicatas_descartadas_por_min\"})"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "",
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 8,
+      "showPoints": "never",
+      "pointSize": 5,
+      "spanNulls": 20000,
+      "lineInterpolation": "linear",
+      "axisPlacement": "auto",
+      "gradientMode": "none",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "duplicatas_descartadas_por_min"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "orange"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 11,
+   "type": "timeseries",
+   "title": "Unidade trocada (psi): pressão da bomba após conversão",
+   "description": "Quando a bomba passa a mandar psi, o gateway converte para bar e marca 'unidade_convertida'. A curva continua coerente. Sem isso, pareceria uma pressão 14 vezes maior.",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 8,
+    "y": 37,
+    "w": 8,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 5000000000 then duration(v: passo) else duration(v: 5000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"leitura\" and r._field == \"valor\" and r.maquina == \"bomba03\" and r.variavel == \"pressao_bar\")\n  |> aggregateWindow(every: janela, fn: mean, createEmpty: true)\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"variavel\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"pressao_bar\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "pressurebar",
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 8,
+      "showPoints": "never",
+      "pointSize": 5,
+      "spanNulls": 25000,
+      "lineInterpolation": "linear",
+      "axisPlacement": "auto",
+      "gradientMode": "none",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     },
+     "min": 0
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "pressao_bar"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "green"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  },
+  {
+   "id": 12,
+   "type": "timeseries",
+   "title": "Parada da esteira: ritmo de peças por minuto",
+   "description": "O contador de pulsos para quando a esteira para. O apontamento por QR code só chega depois.",
+   "datasource": {
+    "type": "influxdb",
+    "uid": "influx-fabrica"
+   },
+   "gridPos": {
+    "x": 16,
+    "y": 37,
+    "w": 8,
+    "h": 6
+   },
+   "targets": [
+    {
+     "refId": "A",
+     "datasource": {
+      "type": "influxdb",
+      "uid": "influx-fabrica"
+     },
+     "query": "passo = (int(v: v.timeRangeStop) - int(v: v.timeRangeStart)) / 700\njanela = if passo > 30000000000 then duration(v: passo) else duration(v: 30000000000)\n\nfrom(bucket: \"fabrica\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"leitura\" and r._field == \"valor\" and r.variavel == \"pecas\" and (r.maquina == \"esteira04\" or r.maquina == \"laminadora01\"))\n  |> aggregateWindow(every: janela, fn: last, createEmpty: false)\n  |> derivative(unit: 1m, nonNegative: true)\n  |> group()\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"maquina\"], valueColumn: \"_value\")\n  |> keep(columns: [\"_time\", \"esteira04\", \"laminadora01\"])"
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "unit": "",
+     "custom": {
+      "drawStyle": "line",
+      "lineWidth": 2,
+      "fillOpacity": 8,
+      "showPoints": "never",
+      "pointSize": 5,
+      "spanNulls": 60000,
+      "lineInterpolation": "linear",
+      "axisPlacement": "auto",
+      "gradientMode": "none",
+      "stacking": {
+       "mode": "none",
+       "group": "A"
+      }
+     },
+     "color": {
+      "mode": "palette-classic"
+     },
+     "thresholds": {
+      "mode": "absolute",
+      "steps": [
+       {
+        "color": "green",
+        "value": null
+       }
+      ]
+     }
+    },
+    "overrides": [
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "esteira04"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "blue"
+        }
+       }
+      ]
+     },
+     {
+      "matcher": {
+       "id": "byName",
+       "options": "laminadora01"
+      },
+      "properties": [
+       {
+        "id": "color",
+        "value": {
+         "mode": "fixed",
+         "fixedColor": "green"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "bottom",
+     "showLegend": true
+    },
+    "tooltip": {
+     "mode": "multi",
+     "sort": "none"
+    }
+   }
+  }
+ ],
+ "links": [
+  {
+   "title": "1 · Visão geral",
+   "type": "link",
+   "url": "/d/fab-geral",
+   "icon": "dashboard",
+   "targetBlank": false
+  },
+  {
+   "title": "2 · Moderna x legada",
+   "type": "link",
+   "url": "/d/fab-modleg",
+   "icon": "dashboard",
+   "targetBlank": false
+  },
+  {
+   "title": "3 · Anomalias",
+   "type": "link",
+   "url": "/d/fab-anom",
+   "icon": "dashboard",
+   "targetBlank": false
+  }
+ ]
+}

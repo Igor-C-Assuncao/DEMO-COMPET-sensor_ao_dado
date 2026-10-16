@@ -1,0 +1,28 @@
+# ---- Baixados pelo INSTALAR_DEMO.bat (pesados)
+_downloads/
+bin/
+app/node_modules/
+node_modules/
+
+# ---- Gerados ao rodar a demo
+data/
+logs/
+run/
+*.log
+*.done
+*.parcial
+
+# ---- Python
+__pycache__/
+*.pyc
+
+# ---- Windows / OneDrive / editores
+Thumbs.db
+desktop.ini
+~$*
+*.tmp
+.vscode/
+.idea/
+
+# ---- Material só do instrutor (fica fora do GitHub)
+MANUAL_DE_CONFIGURACAO_DA_DEMO.pdf

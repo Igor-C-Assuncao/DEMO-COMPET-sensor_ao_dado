@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitor MQTT · Fábrica Demo</title>
+<style>
+  :root { --bg:#0f1420; --pn:#171e2e; --pn2:#1d2639; --bd:#2b3650; --tx:#e6e9f2; --mt:#9aa3bd; --am:#F4AB1C; --az:#5794F2; --vd:#73BF69; --vm:#F2495C; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--tx); font:14px/1.35 "Segoe UI", system-ui, sans-serif; }
+  header { display:flex; align-items:center; gap:14px; padding:10px 16px; background:#233175; border-bottom:3px solid var(--am); flex-wrap:wrap; }
+  header h1 { margin:0; font-size:17px; letter-spacing:.3px; }
+  header .sub { color:#cfd6ef; font-size:12px; }
+  .pill { padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600; background:#333; }
+  .ok { background:#1b5e20; } .bad { background:#8e1b1b; }
+  header .sp { flex:1; }
+  header a { color:var(--am); text-decoration:none; font-weight:600; }
+  main { display:grid; grid-template-columns: 1fr 340px; gap:12px; padding:12px; align-items:start; }
+  @media (max-width:1100px) { main { grid-template-columns: 1fr; } }
+  .card { background:var(--pn); border:1px solid var(--bd); border-radius:10px; }
+  .tabs { display:flex; gap:4px; padding:8px 8px 0; border-bottom:1px solid var(--bd); flex-wrap:wrap; align-items:center; }
+  .tab { padding:7px 14px; border-radius:8px 8px 0 0; cursor:pointer; color:var(--mt); font-weight:600; border:1px solid transparent; border-bottom:none; }
+  .tab.on { background:var(--pn2); color:var(--tx); border-color:var(--bd); }
+  .tools { margin-left:auto; display:flex; gap:8px; align-items:center; padding-bottom:6px; }
+  input[type=search], select { background:#0f1420; color:var(--tx); border:1px solid var(--bd); border-radius:6px; padding:5px 8px; }
+  button { background:#2b3650; color:var(--tx); border:1px solid #3a4768; border-radius:8px; padding:7px 10px; cursor:pointer; font:inherit; font-weight:600; }
+  button:hover { background:#36456a; }
+  button.on { background:#7a1f2b; border-color:#b8394a; }
+  button.am { background:var(--am); color:#10162a; border-color:var(--am); }
+  .scroll { max-height: calc(100vh - 150px); overflow:auto; }
+  table { width:100%; border-collapse:collapse; }
+  th { position:sticky; top:0; background:var(--pn2); text-align:left; font-size:12px; color:var(--mt); padding:7px 8px; z-index:1; }
+  td { padding:5px 8px; border-top:1px solid #222c43; vertical-align:middle; }
+  tr.maq td { background:#1f2a45; font-weight:700; padding:7px 8px; }
+  .badge { font-size:11px; padding:1px 8px; border-radius:6px; margin-left:8px; font-weight:700; }
+  .moderna { background:#0b5cad; } .legada { background:#a5560a; }
+  .mono { font-family: Consolas, "Cascadia Mono", monospace; font-size:12.5px; }
+  .raw { color:#c9a96a; } .num { font-weight:700; font-size:15px; }
+  .u { color:var(--mt); margin-left:4px; font-size:12px; }
+  .q { padding:2px 9px; border-radius:6px; font-size:12px; font-weight:700; white-space:nowrap; }
+  .flash { animation: fl .6s ease-out; } @keyframes fl { from { background:#3b4a78; } to { background:transparent; } }
+  .stale { opacity:.45; }
+  .muted { color:var(--mt); }
+  .cenarios { padding:12px; }
+  .cenarios h3 { margin:0 0 4px; font-size:15px; } .cenarios p { margin:0 0 10px; color:var(--mt); font-size:12.5px; }
+  .grid { display:grid; grid-template-columns: 1fr; gap:6px; }
+  .cen { display:flex; justify-content:space-between; align-items:center; gap:8px; text-align:left; width:100%; }
+  .cen small { color:#b9c2de; font-weight:400; display:block; }
+  .rest { font-variant-numeric: tabular-nums; font-weight:700; color:#ffd36b; }
+  .log { font-family: Consolas, "Cascadia Mono", monospace; font-size:12px; }
+  .log div { padding:2px 8px; border-top:1px solid #222c43; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .log .t { color:var(--mt); } .log .tp { color:#8ab8ff; } .log .rw { color:#c9a96a; }
+  footer { padding:6px 16px 14px; color:var(--mt); font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Monitor MQTT · Fábrica Demo</h1>
+  <span class="sub">dados 100% simulados · sem relação com a Moura</span>
+  <span id="conn" class="pill bad">desconectado</span>
+  <span id="rate" class="pill">0 msg/s</span>
+  <span class="sp"></span>
+  <a href="http://localhost:3000/d/fab-geral" target="_blank">Grafana</a>
+  <a href="http://localhost:1880" target="_blank">Node-RED</a>
+</header>
+<main>
+  <section class="card">
+    <div class="tabs">
+      <div class="tab on" data-t="ab">Antes x depois do gateway</div>
+      <div class="tab" data-t="log">Fluxo de mensagens</div>
+      <div class="tab" data-t="top">Tópicos</div>
+      <div class="tools">
+        <input id="busca" type="search" placeholder="filtrar (máquina, variável, tópico)">
+        <button id="pausa">Pausar</button>
+      </div>
+    </div>
+    <div class="scroll" id="v-ab"><table><thead><tr>
+      <th>Canal</th><th>O que a máquina enviou (planta/raw)</th><th>O que o gateway publicou (fabrica/…)</th><th>Qualidade</th><th>Hora do dado</th><th>Atraso</th><th>Últ.</th>
+    </tr></thead><tbody id="tb"></tbody></table></div>
+    <div class="scroll log" id="v-log" style="display:none"></div>
+    <div class="scroll" id="v-top" style="display:none"><table><thead><tr><th>Tópico</th><th>Última mensagem</th><th>Msgs</th><th>Ret.</th></tr></thead><tbody id="tt"></tbody></table></div>
+  </section>
+  <aside>
+    <section class="card cenarios">
+      <h3>Injetar anomalia</h3>
+      <p>Em uma fábrica real ninguém avisa. Aqui você escolhe e o painel mostra como o dado revela o problema (no Grafana, no gateway e aqui).</p>
+      <div class="grid" id="cen"></div>
+      <div style="display:flex; gap:8px; margin-top:10px">
+        <button id="normal" class="am" style="flex:1">Tudo normal</button>
+        <button id="auto" style="flex:1">Automático: desligado</button>
+      </div>
+    </section>
+  </aside>
+</main>
+<footer>Broker local ws://127.0.0.1:9001 · tópicos: <b>planta/raw/#</b> (o que a máquina envia) e <b>fabrica/#</b> (dado normalizado) · comandos: <b>demo/cenario/&lt;nome&gt;</b></footer>
+
+<script src="/vendor/mqtt.min.js"></script>
+<script>
+const COR = { boa:'#2e7d32', fio_rompido:'#d32f2f', congelado:'#1976d2', pico:'#f9a825', relogio_fora:'#8e24aa', unidade_convertida:'#ef6c00', fora_da_faixa:'#b71c1c', sem_dados:'#616161', acima_da_faixa:'#b71c1c', unidade_diferente:'#b71c1c', valor_invalido:'#b71c1c' };
+const $ = (s) => document.querySelector(s);
+let meta = null, pausado = false, tab = 'ab', msgs = 0, auto = false;
+const raw = {}, norm = {}, link = {}, topicos = new Map(), logLinhas = [];
+const sujo = new Set();
+
+fetch('/api/meta').then(r => r.json()).then(m => { meta = m; montaCenarios(); montaTabela(); });
+
+const cli = mqtt.connect('ws://127.0.0.1:9001', { clientId: 'monitor-' + Math.random().toString(16).slice(2, 8), reconnectPeriod: 2000 });
+cli.on('connect', () => { $('#conn').textContent = 'conectado ao broker'; $('#conn').className = 'pill ok'; cli.subscribe(['planta/raw/#', 'fabrica/#', 'demo/status']); });
+cli.on('close', () => { $('#conn').textContent = 'desconectado'; $('#conn').className = 'pill bad'; });
+cli.on('message', (t, buf, pkt) => {
+  msgs++; const txt = buf.toString(); let j = null; try { j = JSON.parse(txt); } catch (e) { }
+  const agora = Date.now(); const p = t.split('/');
+  const e = topicos.get(t) || { n: 0 }; e.n++; e.txt = txt; e.ts = agora; e.ret = pkt && pkt.retain; topicos.set(t, e);
+  if (t === 'demo/status') { statusCen(j); return; }
+  if (t.startsWith('planta/raw/') && p[3] !== 'evento') { raw[p[2] + '/' + p[3]] = { j, txt, ts: agora }; sujo.add(p[2] + '/' + p[3]); }
+  else if (p[0] === 'fabrica' && p.length === 4 && p[1] !== '_link' && p[1] !== '_gateway' && p[1] !== 'eventos') { norm[p[2] + '/' + p[3]] = { j, ts: agora }; sujo.add(p[2] + '/' + p[3]); }
+  else if (p[1] === '_link') { link[p[2] + '/' + p[3]] = j; sujo.add(p[2] + '/' + p[3]); }
+  if (!pausado) { logLinhas.push({ ts: agora, t, txt, raw: t.startsWith('planta/') }); if (logLinhas.length > 400) logLinhas.shift(); }
+});
+setInterval(() => { $('#rate').textContent = msgs + ' msg/s'; msgs = 0; }, 1000);
+
+// ---------------- tabela antes x depois
+function montaTabela() {
+  const tb = $('#tb'); tb.innerHTML = ''; const por = {};
+  for (const c of meta.canais) (por[c.maq] = por[c.maq] || []).push(c);
+  for (const m of Object.keys(meta.maquinas)) {
+    const mm = meta.maquinas[m];
+    const tr = document.createElement('tr'); tr.className = 'maq'; tr.dataset.maq = m;
+    tr.innerHTML = `<td colspan="7">${mm.nome}<span class="badge ${mm.origem}">${mm.origem}</span><span class="muted" style="font-weight:400; margin-left:10px">${mm.via}</span></td>`; tb.appendChild(tr);
+    for (const c of por[m]) {
+      const r = document.createElement('tr'); r.id = 'r-' + c.chave.replace('/', '__'); r.dataset.busca = (c.chave + ' ' + mm.nome).toLowerCase();
+      r.innerHTML = `<td class="mono">${c.varn}<div class="muted" style="font-size:11px">${c.descricao}</div></td><td class="mono raw" data-c="raw">…</td><td data-c="val">…</td><td data-c="q"></td><td class="mono" data-c="h"></td><td class="mono" data-c="a" style="white-space:nowrap"></td><td class="mono muted" data-c="s" style="white-space:nowrap"></td>`;
+      tb.appendChild(r);
+    }
+  }
+}
+function atualizaLinha(ch) {
+  const r = document.getElementById('r-' + ch.replace('/', '__')); if (!r) return;
+  const rw = raw[ch], n = norm[ch], lk = link[ch], agora = Date.now();
+  const g = (c) => r.querySelector('[data-c=' + c + ']');
+  if (rw) g('raw').textContent = rw.txt.replace(/"/g, '').replace(/,/g, ', ');
+  if (n && n.j) {
+    const v = n.j.valor, u = n.j.unidade || '';
+    g('val').innerHTML = (v === null ? '<span class="muted">sem valor</span>' : `<span class="num">${typeof v === 'number' ? (Math.abs(v) >= 1000 ? v.toFixed(0) : v.toFixed(2)) : v}</span><span class="u">${u}</span>`);
+    const q = lk && lk.link === 'sem_dados' ? 'sem_dados' : n.j.qualidade;
+    g('q').innerHTML = `<span class="q" style="background:${COR[q] || '#757575'}">${q}</span>`;
+    g('h').textContent = (n.j.hora || '').slice(11, 19) + ' (' + (n.j.hora_origem || '') + ')';
+    const a = n.j.atraso_s; g('a').textContent = (a === undefined ? '' : a + ' s'); g('a').style.color = Math.abs(a) > 120 ? '#d98cff' : '';
+  }
+  const idade = Math.round((agora - Math.max((rw || {}).ts || 0, (n || {}).ts || 0)) / 1000);
+  g('s').textContent = idade + ' s'; r.classList.toggle('stale', idade > 20);
+  r.classList.remove('flash'); void r.offsetWidth; r.classList.add('flash');
+}
+setInterval(() => {
+  if (pausado || !meta) return;
+  for (const ch of sujo) atualizaLinha(ch); sujo.clear();
+  if (tab === 'log') desenhaLog(); if (tab === 'top') desenhaTopicos();
+  const f = $('#busca').value.toLowerCase();
+  document.querySelectorAll('#tb tr:not(.maq)').forEach(r => r.style.display = !f || r.dataset.busca.includes(f) ? '' : 'none');
+}, 400);
+
+function desenhaLog() {
+  const f = $('#busca').value.toLowerCase(); const el = $('#v-log');
+  el.innerHTML = logLinhas.slice(-120).reverse().filter(l => !f || (l.t + l.txt).toLowerCase().includes(f))
+    .map(l => `<div><span class="t">${new Date(l.ts).toLocaleTimeString('pt-BR')}</span> <span class="${l.raw ? 'rw' : 'tp'}">${l.t}</span> ${l.txt.replace(/</g, '&lt;')}</div>`).join('');
+}
+function desenhaTopicos() {
+  const f = $('#busca').value.toLowerCase();
+  $('#tt').innerHTML = [...topicos.entries()].sort().filter(([t, e]) => !f || (t + e.txt).toLowerCase().includes(f))
+    .map(([t, e]) => `<tr><td class="mono">${t}</td><td class="mono ${t.startsWith('planta') ? 'raw' : ''}">${e.txt.replace(/</g, '&lt;').slice(0, 160)}</td><td>${e.n}</td><td>${e.ret ? 'sim' : ''}</td></tr>`).join('');
+}
+
+// ---------------- abas e controles
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); t.classList.add('on'); tab = t.dataset.t;
+  for (const k of ['ab', 'log', 'top']) $('#v-' + k).style.display = k === tab ? '' : 'none';
+});
+$('#pausa').onclick = () => { pausado = !pausado; $('#pausa').textContent = pausado ? 'Retomar' : 'Pausar'; $('#pausa').classList.toggle('on', pausado); };
+
+// ---------------- cenários
+function montaCenarios() {
+  const el = $('#cen'); el.innerHTML = '';
+  for (const [nome, c] of Object.entries(meta.cenarios)) {
+    const b = document.createElement('button'); b.className = 'cen'; b.id = 'c-' + nome;
+    b.innerHTML = `<span>${c.rotulo}<small>${meta.maquinas[c.maquina].nome} · ${c.duracao} s</small></span><span class="rest" id="t-${nome}"></span>`;
+    b.onclick = () => cli.publish('demo/cenario/' + nome, b.classList.contains('on') ? 'off' : String(c.duracao));
+    el.appendChild(b);
+  }
+}
+function statusCen(s) {
+  if (!s || !meta) return;
+  auto = !!s.auto; $('#auto').textContent = 'Automático: ' + (auto ? 'ligado' : 'desligado'); $('#auto').classList.toggle('on', auto);
+  const ativos = {}; for (const a of (s.ativos || [])) ativos[a.nome] = a.restante_s;
+  for (const nome of Object.keys(meta.cenarios)) {
+    const b = $('#c-' + nome); if (!b) continue; const on = nome in ativos; b.classList.toggle('on', on); $('#t-' + nome).textContent = on ? ativos[nome] + ' s' : '';
+  }
+}
+$('#normal').onclick = () => cli.publish('demo/cenario/normal', '1');
+$('#auto').onclick = () => cli.publish('demo/cmd/auto', auto ? 'off' : 'on');
+</script>
+</body>
+</html>

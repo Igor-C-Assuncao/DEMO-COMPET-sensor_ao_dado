@@ -1,0 +1,62 @@
+; Modelo de configuracao do Grafana. O iniciar_demo.ps1 troca @@RAIZ@@ pela pasta real e grava em data/grafana/grafana.ini
+app_mode = production
+instance_name = fabrica-demo
+
+[paths]
+data = @@RAIZ@@/data/grafana
+logs = @@RAIZ@@/logs/grafana
+plugins = @@RAIZ@@/data/grafana/plugins
+provisioning = @@RAIZ@@/data/grafana/provisioning
+
+[server]
+protocol = http
+http_addr = 127.0.0.1
+http_port = 3000
+
+[database]
+type = sqlite3
+path = grafana.db
+
+[security]
+admin_user = admin
+admin_password = demo12345
+disable_gravatar = true
+
+[auth.anonymous]
+enabled = true
+org_name = Main Org.
+org_role = Admin
+
+[users]
+default_theme = dark
+
+[analytics]
+reporting_enabled = false
+check_for_updates = false
+check_for_plugin_updates = false
+feedback_links_enabled = false
+
+[news]
+news_feed_enabled = false
+
+[dashboards]
+default_home_dashboard_path = @@RAIZ@@/config/grafana/dashboards/01_visao_geral.json
+min_refresh_interval = 1s
+
+[alerting]
+enabled = false
+
+[unified_alerting]
+enabled = false
+
+[plugins]
+preinstall_disabled = true
+preinstall =
+plugin_admin_enabled = false
+
+[snapshots]
+external_enabled = false
+
+[log]
+mode = file
+level = warn

@@ -1,0 +1,1 @@
+{"name":"demo-sensor-ao-dado","version":"1.0.0","private":true,"description":"Demonstracao: do sensor ao dado (aula 15/10). Dados 100% simulados.","dependencies":{"aedes":"^1.2.0","aedes-server-factory":"^0.2.1","mqtt":"^5.16.1","node-red":"^4.1.16","ws":"^8.22.0"}}

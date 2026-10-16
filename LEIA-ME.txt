@@ -1,0 +1,27 @@
+DEMONSTRACAO "DO SENSOR AO DADO" (aula de 15/10)
+=================================================
+Fabrica simulada completa: 3 maquinas modernas + 3 legadas, gateway (Node-RED), banco (InfluxDB),
+paineis (Grafana) e um monitor MQTT com botoes para injetar 11 tipos de anomalia.
+Tudo roda so neste computador (127.0.0.1). Dados 100% simulados. Nenhum dado da Moura.
+
+PRIMEIRA VEZ (depois de baixar do GitHub)
+  0. Duplo clique em  INSTALAR_DEMO.bat   (baixa Node.js, InfluxDB, Grafana e dependencias npm; precisa de internet)
+
+COMO USAR
+  1. Duplo clique em  INICIAR_DEMO.bat    (20 s a 1 min; abre o navegador sozinho)
+  2. Monitor MQTT ... http://localhost:8088
+     Grafana ........ http://localhost:3000   (sem senha)
+     Node-RED ....... http://localhost:1880
+  3. Ao terminar: duplo clique em PARAR_DEMO.bat
+
+OUTROS ARQUIVOS
+  INICIAR_DEMO_AUTOMATICO.bat   um cenario de anomalia novo a cada 80 s (para ensaiar)
+  STATUS_DEMO.bat               mostra o que esta no ar
+  GUIA_DO_ALUNO_SIMULADOR.pdf   guia completo (instalacao, telas, topicos, cenarios, problemas)
+
+IMPORTANTE
+  - Requer Node.js 22 (LTS). O INSTALAR_DEMO.bat instala se faltar. Teste: node -v
+  - A pasta esta dentro do OneDrive e tem dezenas de milhares de arquivos: pause a sincronizacao
+    ou mova a pasta "demo" para fora do OneDrive.
+  - Se algo falhar, veja a pasta "logs". Para recomecar do zero: PARAR_DEMO.bat e apague a pasta "data".
+  - Contas locais de demonstracao: InfluxDB demo / demo12345 (token demo-token-fabrica). Nao usar em nada real.

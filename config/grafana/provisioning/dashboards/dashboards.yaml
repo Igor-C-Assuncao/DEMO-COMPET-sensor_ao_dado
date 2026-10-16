@@ -1,0 +1,11 @@
+apiVersion: 1
+providers:
+  - name: fabrica-demo
+    orgId: 1
+    folder: Fábrica Demo
+    type: file
+    disableDeletion: false
+    allowUiUpdates: true
+    updateIntervalSeconds: 30
+    options:
+      path: @@DASHBOARDS@@
